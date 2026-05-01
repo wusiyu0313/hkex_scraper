@@ -58,13 +58,14 @@ bash ./scripts/build_macos.sh
 ### macOS (推荐：GitHub Actions 云端打包)
 仓库已提供工作流：[build-macos.yml](.github/workflows/build-macos.yml)
 
-操作：
-1. 推送代码到 GitHub。
-2. 打开 `Actions` -> `Build macOS App` -> `Run workflow`。
-3. 构建完成后下载 artifact：`HKEXIOScraper-macos-arm64.zip`。
-4. 发给同事解压后直接运行 `HKEXIOScraper.app`。
+执行后会得到两个 artifact：
+- `HKEXIOScraper-macos-arm64-app.zip`
+- `HKEXIOScraper-macos-arm64-browsers.zip`
 
-构建后产物在 `dist/`（本地）或 GitHub Actions artifact（云端）。
+给同事时请两者都发，并放在同一目录：
+1. 解压 `HKEXIOScraper-macos-arm64-app.zip` 得到 `HKEXIOScraper.app`
+2. 解压 `HKEXIOScraper-macos-arm64-browsers.zip` 得到 `ms-playwright/`
+3. 保持 `HKEXIOScraper.app` 与 `ms-playwright` 同级，然后启动 App
 
 ## 测试
 ```bash

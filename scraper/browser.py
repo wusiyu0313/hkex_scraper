@@ -18,12 +18,49 @@ class BrowserSession:
         self.context: BrowserContext | None = None
         self.page: Page | None = None
 
+    def _candidate_browser_dirs(self) -> list[Path]:
+        candidates: list[Path] = []
+
+        # 1) current working directory
+        candidates.append(Path.cwd() / "ms-playwright")
+
+        # 2) bundled executable neighbors (important for macOS .app)
+        exe = Path(sys.executable).resolve()
+        for parent in [exe.parent, *list(exe.parents)[:4]]:
+            candidates.append(parent / "ms-playwright")
+
+        # 3) project-root style fallback for dev mode
+        candidates.append(Path(__file__).resolve().parents[1] / "ms-playwright")
+
+        # de-dup while keeping order
+        seen: set[str] = set()
+        ordered: list[Path] = []
+        for p in candidates:
+            key = str(p)
+            if key in seen:
+                continue
+            seen.add(key)
+            ordered.append(p)
+        return ordered
+
     def _prepare_browser_env(self) -> None:
-        local_pw = Path.cwd() / "ms-playwright"
-        if local_pw.exists():
-            os.environ.setdefault("PLAYWRIGHT_BROWSERS_PATH", str(local_pw))
+        # Respect explicit env from user/system first.
+        if os.environ.get("PLAYWRIGHT_BROWSERS_PATH"):
+            return
+
+        for path in self._candidate_browser_dirs():
+            if path.exists():
+                os.environ["PLAYWRIGHT_BROWSERS_PATH"] = str(path)
+                logger.info("Using bundled Playwright browsers at {}", path)
+                return
 
     def _install_chromium(self) -> None:
+        # In frozen desktop app there is no reliable embedded python -m flow.
+        if getattr(sys, "frozen", False):
+            raise RuntimeError(
+                "Chromium runtime missing. Please keep the 'ms-playwright' folder next to the app bundle."
+            )
+
         logger.warning("Chromium not found. Installing Playwright Chromium runtime...")
         subprocess.run([sys.executable, "-m", "playwright", "install", "chromium"], check=True)
 
@@ -37,6 +74,7 @@ class BrowserSession:
             message = str(exc).lower()
             if "executable doesn't exist" in message or "playwright install" in message:
                 self._install_chromium()
+                self._prepare_browser_env()
                 self.browser = self._playwright.chromium.launch(headless=bool(self.config.get("headless", True)))
             else:
                 raise

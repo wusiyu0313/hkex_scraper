@@ -22,28 +22,36 @@ jobs:
           python -m pip install -r requirements.txt
           python -m pip install flet-cli pyinstaller
 
-      - name: Install Playwright Chromium runtime
+      - name: Install Playwright Chromium runtime (sidecar)
         run: |
           export PLAYWRIGHT_BROWSERS_PATH="$GITHUB_WORKSPACE/ms-playwright"
           python -m playwright install chromium
 
       - name: Pack macOS app
         run: |
-          export PLAYWRIGHT_BROWSERS_PATH="$GITHUB_WORKSPACE/ms-playwright"
           flet pack ui_app.py \
             --name HKEXIOScraper \
             --add-data "config.yaml:." \
             --add-data "consultants.yaml:." \
-            --add-data "scraper:scraper" \
-            --add-data "ms-playwright:ms-playwright"
+            --add-data "scraper:scraper"
 
-      - name: Create zip artifact
+      - name: Create zip artifact (.app + sidecar browsers)
         run: |
-          cd dist
-          ditto -c -k --sequesterRsrc --keepParent HKEXIOScraper.app HKEXIOScraper-macos-arm64.zip
+          mkdir -p release
+          cp -R dist/HKEXIOScraper.app release/
+          cp -R ms-playwright release/
+          cd release
+          ditto -c -k --sequesterRsrc --keepParent HKEXIOScraper.app HKEXIOScraper-macos-arm64-app.zip
+          ditto -c -k --sequesterRsrc --keepParent ms-playwright HKEXIOScraper-macos-arm64-browsers.zip
 
-      - name: Upload artifact
+      - name: Upload app artifact
         uses: actions/upload-artifact@v4
         with:
-          name: HKEXIOScraper-macos-arm64
-          path: dist/HKEXIOScraper-macos-arm64.zip
+          name: HKEXIOScraper-macos-arm64-app
+          path: release/HKEXIOScraper-macos-arm64-app.zip
+
+      - name: Upload browsers artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: HKEXIOScraper-macos-arm64-browsers
+          path: release/HKEXIOScraper-macos-arm64-browsers.zip
