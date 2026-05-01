@@ -1,0 +1,20 @@
+start_date: "2024-01-01"
+end_date: "2024-06-30"
+# month: "2024-01"  # optional, if set will override start_date/end_date to this full month
+limit: 20
+output_dir: "./output"
+tmp_dir: "./tmp"
+headless: true
+min_delay: 2.0
+max_delay: 5.0
+max_retries: 3
+storage_state_path: "./storage_state.json"
+progress_path: "./progress.json"
+manifest_prefix: "hkex_io_manifest"
+base_urls:
+  application_proof: "https://www1.hkexnews.hk/app/appindex.html"
+selectors:
+  accept_buttons:
+    - "button:has-text('ACCEPT')"
+    - "a:has-text('ACCEPT')"
+    - "text=ACCEPT"

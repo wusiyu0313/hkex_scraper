@@ -1,0 +1,49 @@
+﻿name: Build macOS App
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-macos:
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install flet-cli
+
+      - name: Install Playwright Chromium runtime
+        run: |
+          export PLAYWRIGHT_BROWSERS_PATH="$GITHUB_WORKSPACE/ms-playwright"
+          python -m playwright install chromium
+
+      - name: Pack macOS app
+        run: |
+          export PLAYWRIGHT_BROWSERS_PATH="$GITHUB_WORKSPACE/ms-playwright"
+          flet pack ui_app.py \
+            --name HKEXIOScraper \
+            --add-data "config.yaml:." \
+            --add-data "consultants.yaml:." \
+            --add-data "scraper:scraper" \
+            --add-data "ms-playwright:ms-playwright"
+
+      - name: Create zip artifact
+        run: |
+          cd dist
+          ditto -c -k --sequesterRsrc --keepParent HKEXIOScraper.app HKEXIOScraper-macos-arm64.zip
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: HKEXIOScraper-macos-arm64
+          path: dist/HKEXIOScraper-macos-arm64.zip
